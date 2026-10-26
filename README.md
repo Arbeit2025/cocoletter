@@ -18,5 +18,5 @@ Single-file Flask + SQLite memo app.
 pip install -r requirements.txt
 python app.py
 
-## Repository
+## Live demo
 https://cocoletter2.onrender.com/
