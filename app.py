@@ -40,7 +40,7 @@ a{color:#2b59c3;}
 <div style="white-space:pre-wrap;">{{ m[1] }}</div>
 <small>{{ m[2] }}</small>
 &nbsp;|&nbsp;
-<a href="/delete/{{ m[0] }}">{{ UI.btn_delete }}</a>
+<form method="POST" action="/delete/{{ m[0] }}" style="display:inline"><button type="submit">{{ UI.btn_delete }}</button></form>
 </div>
 {% endfor %}
 
@@ -69,12 +69,13 @@ from flask import Flask, render_template_string, request, redirect
 import sqlite3
 import os
 from datetime import datetime
+from zoneinfo import ZoneInfo
 
 app = Flask(__name__)
 
 # DB file will be created next to this app.py
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_PATH = os.path.join(BASE_DIR, "memo.db")
+DB_PATH = os.environ.get("COCOLETTER_DB_PATH", os.path.join(BASE_DIR, "memo.db"))
 
 UI_TEXT = {
     "app_title": "Coco’s Letter",
@@ -110,7 +111,7 @@ def db_fetch():
         ).fetchall()
 
 def db_insert(text: str):
-    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")
     with db() as c:
         c.execute(
             "INSERT INTO memos(content, created_at) VALUES(?, ?)",
@@ -138,12 +139,12 @@ def add():
         db_insert(text)
     return redirect("/")
 
-@app.route("/delete/<int:mid>")
+@app.route("/delete/<int:mid>", methods=["POST"])
 def delete(mid):
     db_delete(mid)
     return redirect("/")
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=os.environ.get("FLASK_DEBUG") == "1")
 
 
