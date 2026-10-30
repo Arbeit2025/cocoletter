@@ -53,6 +53,43 @@ class CocoletterTest(unittest.TestCase):
         res = self.client.get("/delete/1")
         self.assertEqual(res.status_code, 405)
 
+    def test_index_has_edit_link(self):
+        self.client.post("/add", data={"content": "editable memo"})
+        mid = self.mod.db_fetch()[0][0]
+        body = self.client.get("/").get_data(as_text=True)
+        self.assertIn(f"/edit/{mid}", body)
+
+    def test_edit_page_shows_current_content(self):
+        self.client.post("/add", data={"content": "before edit"})
+        mid = self.mod.db_fetch()[0][0]
+        res = self.client.get(f"/edit/{mid}")
+        self.assertEqual(res.status_code, 200)
+        self.assertIn("before edit", res.get_data(as_text=True))
+
+    def test_edit_via_post_updates_content(self):
+        self.client.post("/add", data={"content": "before edit"})
+        mid, _content, created_at = self.mod.db_fetch()[0]
+        res = self.client.post(f"/edit/{mid}", data={"content": "after edit"})
+        self.assertEqual(res.status_code, 302)
+        row = self.mod.db_fetch_one(mid)
+        self.assertEqual(row[1], "after edit")
+        # created_at is preserved by an edit
+        self.assertEqual(row[2], created_at)
+        body = self.client.get("/").get_data(as_text=True)
+        self.assertIn("after edit", body)
+        self.assertNotIn("before edit", body)
+
+    def test_edit_empty_is_ignored(self):
+        self.client.post("/add", data={"content": "keep me"})
+        mid = self.mod.db_fetch()[0][0]
+        self.client.post(f"/edit/{mid}", data={"content": "   "})
+        self.assertEqual(self.mod.db_fetch_one(mid)[1], "keep me")
+
+    def test_edit_missing_memo_returns_404(self):
+        self.assertEqual(self.client.get("/edit/9999").status_code, 404)
+        res = self.client.post("/edit/9999", data={"content": "x"})
+        self.assertEqual(res.status_code, 404)
+
 
 if __name__ == "__main__":
     unittest.main()
