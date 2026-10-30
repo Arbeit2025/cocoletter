@@ -53,11 +53,30 @@ const lines=[
 "その一言、大事にして。",
 "無理しなくていいんですよ。",
 "私は見ています。",
-"……ふふ、呼びました？"
+"……ふふ、呼びました？",
+"おかえりなさい。待っていましたよ。",
+"たまには休憩も大事です。",
+"今日の言葉、あとで読み返すのが楽しみです。",
+"無理に長く書かなくていいんです。短くても、あなたの言葉です。",
+"ココアでも淹れましょうか。……気持ちだけですけど。",
+"書く手が止まったら、深呼吸をひとつ。",
+"その調子です。少しずつで大丈夫。",
+"わたしはここにいますよ。",
+"今日はどんな一日でした？",
+"うまく書けない日もあります。それも記録のうちです。",
+"あなたの言葉は、ちゃんと届いています。",
+"静かな時間も、悪くないでしょう。",
+"ふふ、また呼ばれましたね。",
+"続き、気になります。",
+"今日の一言が、明日のあなたを助けるかもしれません。",
+"肩の力を抜いて。……はい、上手です。",
+"書いてくれて、ありがとう。",
+"夜更かしはほどほどに、ですよ。"
 ];
 const b=document.getElementById("cocoaBtn");
 const t=document.getElementById("cocoaText");
-if(b){b.onclick=()=>t.textContent=lines[Math.floor(Math.random()*lines.length)];}
+let lastLine=-1;
+if(b){b.onclick=()=>{let i;do{i=Math.floor(Math.random()*lines.length);}while(lines.length>1&&i===lastLine);lastLine=i;t.textContent=lines[i];};}
 </script>
 
 </body>

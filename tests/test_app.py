@@ -90,6 +90,20 @@ class CocoletterTest(unittest.TestCase):
         res = self.client.post("/edit/9999", data={"content": "x"})
         self.assertEqual(res.status_code, 404)
 
+    def test_cocoa_button_lines_variety(self):
+        import re
+
+        with open(APP_PATH, encoding="utf-8") as f:
+            source = f.read()
+        match = re.search(r"const lines=\[(.*?)\];", source, re.S)
+        self.assertIsNotNone(match)
+        lines = re.findall(r'"([^"]+)"', match.group(1))
+        self.assertGreaterEqual(len(lines), 20)
+        self.assertEqual(len(lines), len(set(lines)), "lines must be unique")
+        body = self.client.get("/").get_data(as_text=True)
+        for line in lines:
+            self.assertIn(line, body)
+
 
 if __name__ == "__main__":
     unittest.main()
