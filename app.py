@@ -40,6 +40,8 @@ a{color:#2b59c3;}
 <div style="white-space:pre-wrap;">{{ m[1] }}</div>
 <small>{{ m[2] }}</small>
 &nbsp;|&nbsp;
+<a href="/edit/{{ m[0] }}"><button type="button">{{ UI.btn_edit }}</button></a>
+&nbsp;|&nbsp;
 <form method="POST" action="/delete/{{ m[0] }}" style="display:inline"><button type="submit">{{ UI.btn_delete }}</button></form>
 </div>
 {% endfor %}
@@ -62,10 +64,40 @@ if(b){b.onclick=()=>t.textContent=lines[Math.floor(Math.random()*lines.length)];
 </html>
 """
 
+EDIT_HTML = """<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<title>{{ UI.edit_title }} - {{ UI.app_title }}</title>
+<style>
+body{margin:0;background:#1b120f;color:#fff;font-family:sans-serif;}
+.card{background:#fff;color:#000;padding:16px;margin:14px;}
+textarea{width:100%;min-height:120px;}
+button{padding:8px 12px;}
+a{color:#2b59c3;}
+</style>
+</head>
+<body>
+
+<h1>{{ UI.edit_title }}</h1>
+
+<div class="card">
+<form method="POST" action="/edit/{{ memo[0] }}">
+<textarea name="content" required>{{ memo[1] }}</textarea>
+<button type="submit">{{ UI.btn_update }}</button>
+<a href="/">{{ UI.btn_cancel }}</a>
+</form>
+<small>{{ memo[2] }}</small>
+</div>
+
+</body>
+</html>
+"""
+
 # =========================
 # [S2] OTHER
 # =========================
-from flask import Flask, render_template_string, request, redirect
+from flask import Flask, render_template_string, request, redirect, abort
 import sqlite3
 import os
 from datetime import datetime
@@ -82,6 +114,10 @@ UI_TEXT = {
     "lead": "ここは、あなたの言葉を静かに置ける場所です。",
     "btn_save": "保存する",
     "btn_delete": "消す",
+    "btn_edit": "編集する",
+    "btn_update": "更新する",
+    "btn_cancel": "キャンセル",
+    "edit_title": "メモを編集",
 }
 
 @app.context_processor
@@ -110,12 +146,27 @@ def db_fetch():
             "SELECT id, content, created_at FROM memos ORDER BY id DESC"
         ).fetchall()
 
+def db_fetch_one(mid: int):
+    with db() as c:
+        return c.execute(
+            "SELECT id, content, created_at FROM memos WHERE id=?",
+            (mid,),
+        ).fetchone()
+
 def db_insert(text: str):
     now = datetime.now(ZoneInfo("Asia/Tokyo")).strftime("%Y-%m-%d %H:%M:%S")
     with db() as c:
         c.execute(
             "INSERT INTO memos(content, created_at) VALUES(?, ?)",
             (text, now),
+        )
+
+def db_update(mid: int, text: str):
+    # created_at is preserved: editing changes the content only
+    with db() as c:
+        c.execute(
+            "UPDATE memos SET content=? WHERE id=?",
+            (text, mid),
         )
 
 def db_delete(mid: int):
@@ -138,6 +189,19 @@ def add():
     if text:
         db_insert(text)
     return redirect("/")
+
+@app.route("/edit/<int:mid>", methods=["GET", "POST"])
+def edit(mid):
+    memo = db_fetch_one(mid)
+    if memo is None:
+        abort(404)
+    if request.method == "POST":
+        text = request.form.get("content", "").strip()
+        if text:
+            db_update(mid, text)
+            return redirect("/")
+        return redirect(f"/edit/{mid}")
+    return render_template_string(EDIT_HTML, memo=memo)
 
 @app.route("/delete/<int:mid>", methods=["POST"])
 def delete(mid):
